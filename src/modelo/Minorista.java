@@ -6,6 +6,7 @@
 package modelo;
 
 import com.google.gson.Gson;
+import controlador.master;
 import generador.Generador;
 import inventario.AdminInv;
 import inventario.Inventario;
@@ -31,9 +32,19 @@ public class Minorista {
     private IMayorista servidor = null;
     private int dia;
     private int id =-1;
+    private Orden o;
+    private Gson g;
+    private boolean correr;
+    private master m;
+    private String[] datos;
     
-    public Minorista(){
+    public Minorista(master m){
+        g = new Gson();
+        o= new Orden(0,0,0);
         inicializar();
+        correr=false;
+        this.m = m;
+        datos = new String[4] ;
     }
     
     private void inicializar(){
@@ -57,7 +68,7 @@ public class Minorista {
         try {
             Registry registro=  LocateRegistry.getRegistry(ip,puerto);
              servidor = (IMayorista)registro.lookup("Mayorista");
-             id = servidor.conectarse("h");
+             id = servidor.conectarse("S");
              dia = servidor.obtenerDia();
              System.out.println("Conectado!!");
              return true;
@@ -72,38 +83,132 @@ public class Minorista {
         return false;
     }
     
-    public void iniciar() throws RemoteException{
+    public void correr(){
         
-        
-        int orden =(int) demanda.generar();
-        String respuesta = servidor.hacerPedido(orden, id);
-        Gson g = new Gson();
-        Orden o = g.fromJson(respuesta, Orden.class);
-        System.out.println(respuesta);
-        int espera = o.getDiasEspera();
-        servidor.aceptarOrden(id);
-        while(true){
-            try{
-                int aux = servidor.obtenerDia();
-                if(dia+5<aux){
-                    
-                        dia=servidor.obtenerDia();
-                        respuesta = servidor.hacerPedido(orden, id);
-                        System.out.println(respuesta);
-                        //o = g.fromJson(respuesta, Orden.class);
-                        //espera = o.getDiasEspera();
-                        servidor.aceptarOrden(id);
-                    
-                    
-                }else{
-                    //System.out.println(aux + "Esperando...");
+        Thread hilo = new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                
+                try {            
+                    int d;
+                    int orden;
+                    correr=true;
+                    while(correr){
+                        d = servidor.obtenerDia();
+                        m.mostrarDia();
+                        if(d>dia){
+                            dia = d;
+                            
+                            if(o.getDiasEspera()<=0){
+                                
+                                //generar demanda
+                                if(servidor.numeroMinoristas()==0){
+                                    orden =(int) demanda.generar();
+                                }else{
+                                    orden =(int) demanda.generar()/servidor.numeroMinoristas();
+                                }                             
+                             
+                                String respuesta = servidor.hacerPedido(orden, id);
+                                System.out.println(respuesta);
+                                servidor.aceptarOrden(id);                                
+                                try{
+                                    recibir();//recibir orden pendiente
+                                    m.actualizar();//actualizar recibido en la vista                                   
+                                    o = g.fromJson(respuesta, Orden.class);
+                                    guardar();//guadar los datos de oreden de la nueva oreden
+                                    m.mostar();//mostrar datos de la nueva oreden
+                                    
+                                }catch(Exception ex){                                    
+                                    o.setDiasEspera((o.getDiasEspera()-1));
+                                    actualizar();//actualizar los datos de la oreden
+                                    m.actualizar();
+                                    System.out.println(ex.toString());
+                                }   
+                            }else{
+                                o.setDiasEspera((o.getDiasEspera()-1));
+                                actualizar();//actualizar los datos de la oreden
+                                m.actualizar();
+                            } 
+                        }                
+                    }
+                } catch (RemoteException ex) {
+                    System.out.println("Fallo la Conexion");
+                    Logger.getLogger(Minorista.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            }catch( RemoteException ex){
-                System.out.println("Fallo en la conexion!!!");
             }
-            
-        }
+        };
+        hilo.start();
     }
+    
+    
+    
+    public void iniciar() throws RemoteException{        
+        int orden;
+        //generar primera demanda
+        if(servidor.numeroMinoristas()==0){
+            orden =(int) demanda.generar();
+        }else{
+            orden =(int) demanda.generar()/servidor.numeroMinoristas();
+        }
+        
+        String respuesta = servidor.hacerPedido(orden, id); //Realizar pedido y capturar respuesta del servidor
+        
+        try{
+            o = g.fromJson(respuesta, Orden.class); // Traducir la respuesta
+            servidor.aceptarOrden(id); // Aceptar el pedido;
+            guardar();//guadar los datos de oreden de la nueva oreden
+            
+        }catch(Exception ex){
+            System.out.println(ex.toString());
+        }
+
+        correr();//Empezar la simulacion automatica        
+    }
+
+    public int getDia() {
+        return dia;
+    }
+
+    public void setDia(int dia) {
+        this.dia = dia;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public Orden getO() {
+        return o;
+    }
+    
+    public void guardar(){
+        datos[0]=""+o.getCantidad();
+        datos[1]=""+o.getDiasEspera();
+        datos[2]=""+o.getDiasEspera();
+        datos[3]=""+o.isEntregado();
+    }
+    
+    public void actualizar(){
+        datos[2]=""+o.getDiasEspera();
+    }
+    
+    public void recibir(){
+        datos[3]=""+true;
+    }
+  
+    public String[] getDatos(){  
+        return datos;
+    }
+
+    public void setO(Orden o) {
+        this.o = o;
+    }
+    
     
     
 }

@@ -5,10 +5,11 @@
  */
 package visa;
 
+import controlador.master;
 import java.rmi.RemoteException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import modelo.Minorista;
+
 
 /**
  *
@@ -19,9 +20,9 @@ public class JFrameConectar extends javax.swing.JFrame {
     /**
      * Creates new form JFrameConectar
      */
-    private Minorista m;
-    public JFrameConectar(Minorista m) {
-        this.m=m;
+    private master m;
+    public JFrameConectar(master m) {
+        this.m = m;
         initComponents();
     }
 
@@ -104,13 +105,11 @@ public class JFrameConectar extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         
-        try {
-            m.conectar(jTextField1.getText(),Integer.parseInt(jTextField2.getText()));
-            m.iniciar();
-            // TODO add your handling code here:
-        } catch (RemoteException ex) {
-            Logger.getLogger(JFrameConectar.class.getName()).log(Level.SEVERE, null, ex);
+        if(m.conectar(jTextField1.getText(),Integer.parseInt(jTextField2.getText()))){
+            this.dispose();
         }
+        
+        
     }//GEN-LAST:event_jButton1ActionPerformed
 
     

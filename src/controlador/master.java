@@ -5,19 +5,56 @@
  */
 package controlador;
 
-import inventario.modelo.Mayorista;
+import java.rmi.RemoteException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import modelo.Minorista;
 import visa.JFrameConectar;
+import visa.JFramePrincipal;
 
 /**
  *
  * @author Luis David SAHER
  */
-public class master {   
-    public static void main(String args[]){
-        Minorista m = new Minorista();
-        JFrameConectar conectar;
-        conectar = new JFrameConectar(m);
-        conectar.setVisible(true);
+public class master {
+    
+    private Minorista min;
+    private JFramePrincipal ventana;   
+    private String datos [];
+    
+    public master(){
+        ventana = new JFramePrincipal();
+        datos = new String[4];
     }
+    
+    public void controlarMinorista(Minorista min){
+        this.min=min;
+    }
+    
+    public boolean conectar(String ip, int puerto){
+        if(min.conectar(ip, puerto)){
+            ventana.setVisible(true);
+            ventana.mostrarId(min.getId());
+            ventana.mostrarDia(min.getDia());
+            try {
+                min.iniciar();
+            } catch (RemoteException ex) {
+                Logger.getLogger(master.class.getName()).log(Level.SEVERE, null, ex);
+            }            
+            ventana.mostrar(min.getDatos());
+            return true;
+        }
+        return false;
+    }
+    public void mostrarDia(){
+        ventana.mostrarDia(min.getDia());
+    }
+    public void actualizar(){
+        ventana.actualizar(min.getDatos());
+        ventana.mostrarDia(min.getDia());
+    } 
+    public void mostar(){
+        ventana.mostrar(min.getDatos());
+    }  
+    
 }
