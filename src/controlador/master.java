@@ -20,11 +20,10 @@ public class master {
     
     private Minorista min;
     private JFramePrincipal ventana;   
-    private String datos [];
+    
     
     public master(){
         ventana = new JFramePrincipal();
-        datos = new String[4];
     }
     
     public void controlarMinorista(Minorista min){

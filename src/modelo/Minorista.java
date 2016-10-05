@@ -26,8 +26,7 @@ import javax.swing.JOptionPane;
  */
 public class Minorista {
     
-    private Inventario inv;
-    private AdminInv admin;
+    
     private Generador demanda;
     private IMayorista servidor = null;
     private int dia;
@@ -48,9 +47,6 @@ public class Minorista {
     }
     
     private void inicializar(){
-        inv = new Inventario();
-        admin = new AdminInv(inv, 5, 50, 52, 1, 2, 7);
-        admin.cambiarPolitica(10, 25);
         demanda = new Generador();
         demanda.addOpcion(25, 0.02);
         demanda.addOpcion(26, 0.04);
